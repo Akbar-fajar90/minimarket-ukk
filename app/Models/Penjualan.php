@@ -7,9 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 class Penjualan extends Model
 {
     protected $fillable = [
-        'user_id', 'nama_pelanggan', 'no_telepon',
-        'alamat', 'tanggal_penjualan', 'total_harga',
-    ];
+    'user_id', 'pelanggan_id', 'voucher_id',
+    'nama_pelanggan', 'no_telepon', 'alamat',
+    'tanggal_penjualan',
+    'total_harga', 'diskon', 'total_bayar',
+];
 
     public function details()
     {
@@ -21,14 +23,35 @@ class Penjualan extends Model
         return $this->belongsTo(User::class);
     }
 
+        public function pelanggan()
+    {
+        return $this->belongsTo(Pelanggan::class);
+    }
+
+    public function voucher()
+    {
+        return $this->belongsTo(Voucher::class);
+    }
+
+    public function penukaranPoins()
+    {
+        return $this->hasMany(PenukaranPoin::class);
+    }
+
     // Hitung total_harga setiap disimpan
     protected static function booted()
     {
-        static::saved(function (Penjualan $penjualan) {
+         static::saved(function (Penjualan $penjualan) {
             $total = $penjualan->details()->sum('subtotal');
-            if ($penjualan->total_harga != $total) {
-                $penjualan->updateQuietly(['total_harga' => $total]);
-            }
+            $diskon = $penjualan->voucher
+                ? $penjualan->voucher->hitungDiskon($total)
+                : 0;
+
+            $penjualan->updateQuietly([
+                'total_harga' => $total,
+                'diskon'      => $diskon,
+                'total_bayar' => max(0, $total - $diskon),
+            ]);
         });
     }
 }

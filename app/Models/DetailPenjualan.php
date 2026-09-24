@@ -20,12 +20,11 @@ class DetailPenjualan extends Model
 
     protected static function booted()
     {
-        // Saat checkout (detail dibuat) → kurangi stok
         static::created(function (DetailPenjualan $detail) {
             $detail->produk?->decrement('stok', $detail->jumlah);
+            $detail->penjualan?->touch();
         });
 
-        // Saat detail diubah → kembalikan stok lama, kurangi stok baru
         static::updated(function (DetailPenjualan $detail) {
             $oldProdukId = $detail->getOriginal('produk_id');
             $oldJumlah   = $detail->getOriginal('jumlah');
@@ -36,11 +35,13 @@ class DetailPenjualan extends Model
             if ($detail->produk_id) {
                 Produk::find($detail->produk_id)?->decrement('stok', $detail->jumlah);
             }
+
+            $detail->penjualan?->touch();
         });
 
-        // Saat detail dihapus → kembalikan stok
         static::deleted(function (DetailPenjualan $detail) {
             $detail->produk?->increment('stok', $detail->jumlah);
+            $detail->penjualan?->touch();
         });
     }
 }
