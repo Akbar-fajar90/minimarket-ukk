@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->brandName('Minimarket Dashboard')
+            ->resourceCreatePageRedirect('index')
             ->login()
             ->colors([
                 'primary' => Color::Blue,
