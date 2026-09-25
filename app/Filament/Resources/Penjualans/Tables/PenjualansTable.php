@@ -8,6 +8,10 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+// use App\Filament\Exports\PenjualanExporter;
+// use Filament\Actions\ExportAction;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
+use pxlrbt\FilamentExcel\Exports\ExcelExport;
 
 class PenjualansTable
 {
@@ -83,6 +87,13 @@ class PenjualansTable
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+
+                    ExportBulkAction::make()
+                        ->exports([
+                            ExcelExport::make()
+                                ->fromTable()
+                                ->withFilename('laporan-penjualan-' . now()->format('Y-m-d')),
+                        ]),
                 ]),
             ]);
     }
