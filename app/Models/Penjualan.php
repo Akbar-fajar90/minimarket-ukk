@@ -38,10 +38,17 @@ class Penjualan extends Model
         return $this->hasMany(PenukaranPoin::class);
     }
 
-    // Hitung total_harga setiap disimpan
+    // Hitung total_harga setiap disimpan dan menambahkan nama customer walk-in ke Database
     protected static function booted()
     {
-         static::saved(function (Penjualan $penjualan) {
+        static::created(function (Penjualan $penjualan) {
+            if (empty($penjualan->pelanggan_id) && empty($penjualan->nama_pelanggan)) {
+            $penjualan->updateQuietly([
+            'nama_pelanggan' => 'cust-' . str_pad($penjualan->id, 4, '0', STR_PAD_LEFT),
+            ]);
+    }
+        });
+        static::saved(function (Penjualan $penjualan) {
             $total = $penjualan->details()->sum('subtotal');
             $diskon = $penjualan->voucher
                 ? $penjualan->voucher->hitungDiskon($total)
