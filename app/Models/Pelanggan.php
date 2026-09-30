@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use App\Exceptions\PoinTidakCukupException;
 
 class Pelanggan extends Model
 {
@@ -51,25 +53,35 @@ class Pelanggan extends Model
 
     public function tambahPoin(int $jumlah, ?Penjualan $penjualan = null, ?string $keterangan = null): void
     {
-        $this->increment('poin', $jumlah);
+        DB::transaction(function () use ($jumlah, $penjualan, $keterangan) {
+            $this->lockForUpdate(); // Lock the record to prevent race conditions
+            $this->increment('poin', $jumlah);
 
-        $this->penukaranPoins()->create([
-            'penjualan_id' => $penjualan?->id,
-            'tipe'         => 'masuk',
-            'jumlah'       => $jumlah,
-            'keterangan'   => $keterangan ?? 'Poin dari transaksi',
-        ]);
+            $this->penukaranPoins()->create([
+                'penjualan_id' => $penjualan?->id,
+                'tipe'         => 'masuk',
+                'jumlah'       => $jumlah,
+                'keterangan'   => $keterangan ?? 'Poin dari transaksi',
+            ]);
+        });
     }
 
     public function kurangiPoin(int $jumlah, ?Voucher $voucher = null, ?string $keterangan = null): void
     {
-        $this->decrement('poin', $jumlah);
+        if ($this->poin < $jumlah) {
+            throw new PoinTidakCukupException('Poin pelanggan tidak cukup.');
+        }
 
-        $this->penukaranPoins()->create([
-            'voucher_id' => $voucher?->id,
-            'tipe'       => 'keluar',
-            'jumlah'     => $jumlah,
-            'keterangan' => $keterangan ?? 'Penukaran poin dengan voucher',
-        ]);
+        DB::transaction(function () use ($jumlah, $voucher, $keterangan) {
+            $this->lockForUpdate(); // Lock the record to prevent race conditions
+            $this->decrement('poin', $jumlah);
+
+            $this->penukaranPoins()->create([
+                'voucher_id' => $voucher?->id,
+                'tipe'       => 'keluar',
+                'jumlah'     => $jumlah,
+                'keterangan' => $keterangan ?? 'Penukaran poin dengan voucher',
+            ]);
+        });
     }
 }

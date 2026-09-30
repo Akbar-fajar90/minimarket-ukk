@@ -6,6 +6,7 @@ use App\Filament\Resources\Penjualans\PenjualanResource;
 use Filament\Resources\Pages\CreateRecord;
 use App\Models\Produk;
 use App\Models\Voucher;
+use Illuminate\Support\Facades\DB;
 
 class CreatePenjualan extends CreateRecord
 {
@@ -27,48 +28,51 @@ class CreatePenjualan extends CreateRecord
 
     protected function afterCreate(): void
     {
-        $total = 0;
+        DB::transaction(function () {
+            $this->record->lockForUpdate(); // Lock the record to prevent race conditions
 
-        foreach ($this->record->details as $detail) {
-            $produk = Produk::find($detail->produk_id);
-            if ($produk) {
-                $produk->decrement('stok', $detail->jumlah);
+            $total = 0;
+
+            foreach ($this->record->details as $detail) {
+                $produk = Produk::find($detail->produk_id);
+                if ($produk) {
+                    $produk->decrement('stok', $detail->jumlah);
+                }
+                $total += (float) $detail->subtotal;
             }
-            $total += (float) $detail->subtotal;
-        }
 
-        $diskon = 0;
-        if ($this->record->voucher_id) {
-            $voucher = Voucher::find($this->record->voucher_id);
-            
-            if ($voucher) {
-                $diskon = $voucher->hitungDiskon($total);
+            $diskon = 0;
+            if ($this->record->voucher_id) {
+                $voucher = Voucher::find($this->record->voucher_id);
                 
-                $voucher->increment('terpakai');
+                if ($voucher) {
+                    $diskon = $voucher->hitungDiskon($total);
+                    
+                    $voucher->increment('terpakai');
+                }
             }
-        }
 
-        $totalBayar = max(0, $total - $diskon);
+            $totalBayar = max(0, $total - $diskon);
 
-        $this->record->update([
-            'total_harga' => $total,
-            'diskon'      => $diskon,
-            'total_bayar' => $totalBayar,
-        ]);
+            $this->record->update([
+                'total_harga' => $total,
+                'diskon'      => $diskon,
+                'total_bayar' => $totalBayar,
+            ]);
 
-        $this->record->refresh();
-        $penjualan = $this->record;
+            $penjualan = $this->record->fresh(['pelanggan']);
 
-        if ($penjualan->pelanggan_id && $penjualan->total_bayar > 0) {
-            $poin = (int) floor($penjualan->total_bayar / 10000);
+            if ($penjualan && $penjualan->pelanggan_id && $penjualan->pelanggan && $totalBayar > 0) {
+                $poin = (int) floor($totalBayar / 10000);
 
-            if ($poin > 0) {
-                $penjualan->pelanggan->tambahPoin(
-                    jumlah: $poin,
-                    penjualan: $penjualan,
-                    keterangan: "Poin dari transaksi #{$penjualan->id}"
-                );
+                if ($poin > 0) {
+                    $penjualan->pelanggan->tambahPoin(
+                        jumlah: $poin,
+                        penjualan: $penjualan,
+                        keterangan: "Poin dari transaksi #{$penjualan->id}"
+                    );
+                }
             }
-        }
+        });
     }
 }

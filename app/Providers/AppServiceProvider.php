@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use  Filament\Support\Facades\FilamentTimezone;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,11 +15,12 @@ class AppServiceProvider extends ServiceProvider
         //
     }
 
+
     /**
      * Bootstrap any application services.
      */
     public function boot(): void
     {
-        //
+        FilamentTimezone::set('Asia/Jakarta');
     }
 }
