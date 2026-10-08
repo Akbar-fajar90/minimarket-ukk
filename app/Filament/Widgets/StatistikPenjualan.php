@@ -10,11 +10,11 @@ class StatistikPenjualan extends StatsOverviewWidget
 {
     protected function getStats(): array
     {
-        $totalTransaksi = Penjualan::count();
+        $totalTransaksi = Penjualan::where('status', '!=', 'cancelled')->count();
 
-        $pendapatan = Penjualan::sum('total_harga');
+        $pendapatan = Penjualan::where('status', '!=', 'cancelled')->sum('total_harga');
 
-        $transaksiHariIni = Penjualan::whereDate(
+        $transaksiHariIni = Penjualan::where('status', '!=', 'cancelled')->whereDate(
             'tanggal_penjualan',
             today()
         )->count();
