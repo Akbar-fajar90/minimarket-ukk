@@ -14,6 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use App\Filament\Widgets\TotalPendapatanOverview; 
 
 class PenjualanResource extends Resource
 {
@@ -51,6 +52,13 @@ class PenjualanResource extends Resource
             'index' => ListPenjualans::route('/'),
             'create' => CreatePenjualan::route('/create'),
             'edit' => EditPenjualan::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getWidgets(): array
+    {
+        return [
+            TotalPendapatanOverview::class,
         ];
     }
 }

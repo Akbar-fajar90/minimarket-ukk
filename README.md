@@ -94,7 +94,7 @@ app/
 
 ### 1. Clone Repository & Masuk Direktori
 ```bash
-git clone <repository-url>
+git clone <https://github.com/Akbar-fajar90/minimarket-ukk.git>
 cd minimarket
 ```
 

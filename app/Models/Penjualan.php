@@ -10,7 +10,7 @@ class Penjualan extends Model
     'user_id', 'pelanggan_id', 'voucher_id',
     'nama_pelanggan', 'no_telepon', 'alamat',
     'tanggal_penjualan',
-    'total_harga', 'diskon', 'total_bayar',
+    'total_harga', 'diskon', 'total_bayar', 'status',
 ];
 
     public function details()
